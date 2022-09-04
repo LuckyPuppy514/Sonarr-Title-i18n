@@ -323,7 +323,7 @@ function translateTitle() {
                 url: API_URL + "?api_key=" + tmdbApiKey + "&language=" + languageCode + "&page=1&include_adult=true&query=" + encodeURIComponent(title),
                 success: function (res) {
                     if (res && res.results && res.results.length > 0) {
-                        chineseTitle = res.results[res.results.length - 1].name;
+                        chineseTitle = res.results[0].name;
                         GM_setValue(KEY_TITLE_PREFIX + title, chineseTitle);
                         titleDiv.innerHTML = chineseTitle;
                     } else {

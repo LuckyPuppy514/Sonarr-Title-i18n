@@ -1,6 +1,6 @@
 # Sonarr 标题国际化
 
-利用 TMDB 接口把 Sonarr 中的标题替换成其他语言标题
+利用 TMDB 接口把 Sonarr 中的标题和简介替换成其他语言
 
 ## 📕 目录
 
@@ -30,17 +30,17 @@
 1. 点击 [🔑 Get TMDB API Key 🔑](https://www.themoviedb.org/settings/api)，注册 TMDB 账号并获取 API Key
 ![20220904144434](https://cdn.jsdelivr.net/gh/LuckyPuppy514/pic-bed/common/20220904144434.png)
 2. 填写 TMDB API Key 和语言代码，并保存即可
-![20220904143322](https://cdn.jsdelivr.net/gh/LuckyPuppy514/pic-bed/common/20220904143322.png)
-
-> 如果有错误数据或无法加载，可以尝试点击右下角的清除缓存按钮
+![20220905160632](https://cdn.jsdelivr.net/gh/LuckyPuppy514/pic-bed/common/20220905160632.png)
 
 ## 🐳 效果展示
 
 ![20220904143007](https://cdn.jsdelivr.net/gh/LuckyPuppy514/pic-bed/common/20220904143007.png)
 
-![20220904144041](https://cdn.jsdelivr.net/gh/LuckyPuppy514/pic-bed/common/20220904144041.png)
+![20220905160805](https://cdn.jsdelivr.net/gh/LuckyPuppy514/pic-bed/common/20220905160805.png)
 
 ![20220904143155](https://cdn.jsdelivr.net/gh/LuckyPuppy514/pic-bed/common/20220904143155.png)
+
+![20220904144041](https://cdn.jsdelivr.net/gh/LuckyPuppy514/pic-bed/common/20220904144041.png)
 
 ## 👏 相关仓库
 

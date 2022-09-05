@@ -3,8 +3,10 @@
 // @name:zh                 Sonarr 标题国际化
 // @description             利用 TMDB 接口把 Sonarr 中的标题替换成其他语言标题
 // @namespace               https://github.com/LuckyPuppy514
-// @version                 1.0.0
+// @version                 1.0.2
 // @commit                  v1.0.0 创建项目
+// @commit                  v1.0.1 修复接口报错时，无法看到报错信息的BUG
+// @commit                  v1.0.2 改用 tvdbId 查询，提高准确率；新增简介国际化；代码优化
 // @homepage                https://github.com/LuckyPuppy514/Sonarr-Title-i18n
 // @updateURL               https://greasyfork.org/zh-CN/scripts/450716-sonarr-title-i18n
 // @downloadURL             https://greasyfork.org/zh-CN/scripts/450716-sonarr-title-i18n
@@ -24,23 +26,29 @@
 
 'use strict';
 
+// 默认语言代码
+const DEFAULT_LANGUAGE_CODE = "zh-CN";
+// GM_setValue key
 const KEY_TMDB_API_KEY = "KEY_TMDB_API_KEY";
 const KEY_LANGUAGE_CODE = "KEY_LANGUAGE_CODE";
-const DEFAULT_LANGUAGE_CODE = "zh-CN";
+const KEY_ERROR_MESSAGE = "KEY_ERROR_MESSAGE";
 const KEY_TITLE_PREFIX = "TITLE_";
-const API_URL = "https://api.themoviedb.org/3/search/tv";
-
+const KEY_TVDBID_PREFIX = "TVDBID_";
+const KEY_OVERVIEW_PREFIX = "OVERVIEW_";
+// className
 const RIGHT_HEADERF_CLASS_NAME = "PageHeader-right-20I5D";
 const POSTER_TITLE_CLASS_NAME = "SeriesIndexPoster-title-1h3SR";
 const OVERVIEW_TITLE_CLASS_NAME = "SeriesIndexOverview-title-39hvt SeriesIndexOverview-link-3BWTB Link-link-1HpiV Link-link-1HpiV Link-to-1Sec5";
 const DETAILS_TITLE_CLASS_NAME = "SeriesDetails-title-39xGO";
-const DETAILS_TITLE_PATH = "/series/";
 const CALENDAR_TITLE_CLASS_NAME = "CalendarEvent-seriesTitle-3nGRY";
 const CALENDAR_TITLE_AGENDA_CLASS_NAME = "AgendaEvent-seriesTitle-20sIO";
+const DETAILS_OVERVIEW_CLASS_NAME = "SeriesDetails-overview-bPPhg";
+// url path
+const DETAILS_TITLE_PATH = "/series/";
 const CALENDAR_TITLE_PATH = "/calendar";
 const SERIES_TITLE_CLASS_NAME = "Link-link-1HpiV Link-to-1Sec5";
 const SERIES_TITLE_PATH = "/serieseditor, /seasonpass, /queue, /history, /blocklist, /missing, /cutoffunmet";
-
+// element id
 const i18n_BUTTON_ID = "i18n-button";
 const SETTING_HIDDEN_DIV_ID = "setting-hidden-div";
 const SETTING_SHOW_DIV_ID = "setting-show-div";
@@ -49,6 +57,8 @@ const SAVE_BUTTON_ID = "save-button";
 const CLEAR_CACHE_BUTTON_ID = "clear-cache-button";
 const TMDB_API_KEY_INPUT_ID = "tmdb-api-key";
 const LANGUAGE_CODE_INPUT_ID = "language-code";
+const ERROR_MESSAGE_TEXTAREA_ID = "error-message";
+// css
 const CSS = `
 #i18n-button {
 	width: 25px;
@@ -63,7 +73,7 @@ const CSS = `
 	cursor: pointer;
 	z-index: 999
 }
-.i18n-svg {
+#i18n-button-svg {
 	width: 23px;
 	height: 23px;
 }
@@ -72,7 +82,6 @@ const CSS = `
 	display: flex;
 	justify-content: center;
 }
-
 #setting-hidden-div {
 	width: 100%;
 	height: 100%;
@@ -84,32 +93,31 @@ const CSS = `
 	display: none;
 }
 #setting-show-div {
-	color: #fff;
-	width: 460px;
-	height: 210px;
+	width: 500px;
+	height: 260px;
 	background-color: rgba(64, 68, 84, 0.9);
 	display: none;
 	flex-direction: column;
 	border-radius: 5px;
 	align-items: center;
-	padding-top: 50px;
+	padding-top: 40px;
 	box-sizing: border-box;
 	position: absolute;
 	top: 200px;
 }
 #close-button {
 	position: absolute;
-	top: 6px;
-	right: 6px;
-	font-weight: normal;
-	display: block;
-	width: 30px;
-	height: 30px;
-	line-height: 30px;
-	border: 0px;
+	top: 7px;
+	right: 7px;
+	width: 28px;
+	height: 28px;
 	border-radius: 50%;
-	text-align: center;
-	color: rgba(255, 255, 255, 1);
+	background-size: cover;
+	background-image: url(https://cdn.jsdelivr.net/gh/LuckyPuppy514/pic-bed/common/icons8-close-48.png);
+	background-repeat: no-repeat;
+	background-color: rgba(91, 137, 254, 0);
+	color: rgba(255, 255, 255, 0);
+	font-weight: normal;
 }
 #close-button:hover {
 	background-color: rgba(255, 255, 255, 0.5);
@@ -121,7 +129,6 @@ const CSS = `
 	border-radius: 5px;
 	border: none;
 	outline: none;
-	margin-left: 5px;
 	padding-left: 5px;
 	background-color: rgba(0, 0, 0, 1);
 	color: rgba(255, 255, 255, 1);
@@ -131,7 +138,8 @@ const CSS = `
 	opacity: 0.4;
 }
 #setting-show-div input:first-child {
-	margin-bottom: 20px;
+    margin-top: 5px;
+	margin-bottom: 5px;
 }
 #save-button {
 	cursor: pointer;
@@ -151,11 +159,10 @@ const CSS = `
 }
 #clear-cache-button {
 	position: absolute;
-	bottom: 6px;
-	right: 7px;
+	bottom: 8px;
+	right: 8px;
 	width: 30px;
 	height: 30px;
-	line-height: 30px;
 	border-radius: 50%;
 	background-size: cover;
 	background-image: url(https://cdn.jsdelivr.net/gh/LuckyPuppy514/pic-bed/common/icons8-broom-64.png);
@@ -179,32 +186,66 @@ strong:hover:after {
 	width: 90px;
 	height: 30px;
 }
+#error-message {
+	width: 280px;
+	height: 50px;
+	border-radius: 5px;
+	border: none;
+	outline: none;
+	padding-left: 5px;
+    margin-top: 5px;
+    margin-bottom: 5px;
+	background-color: rgba(0, 0, 0, 1);
+	color: rgba(255, 255, 255, 1);
+}
+#setting-table {
+	width: 420px;
+    height: 100px;
+    border: none;
+}
 `
-const DIV = `
+// html
+const i18n_BUTTON = `
+<svg id="i18n-button-svg" xmlns="http://www.w3.org/2000/svg"  viewBox="0 0 48 48" width="48px" height="48px"><path fill="#CFD8DC" d="M15,13h25c1.104,0,2,0.896,2,2v25c0,1.104-0.896,2-2,2H26L15,13z"/><path fill="#546E7A" d="M26.832,34.854l-0.916-1.776l0.889-0.459c0.061-0.031,6.101-3.208,9.043-9.104l0.446-0.895l1.79,0.893l-0.447,0.895c-3.241,6.496-9.645,9.85-9.916,9.989L26.832,34.854z"/><path fill="#546E7A" d="M38.019 34l-.87-.49c-.207-.116-5.092-2.901-8.496-7.667l1.627-1.162c3.139 4.394 7.805 7.061 7.851 7.087L39 32.26 38.019 34zM26 22H40V24H26z"/><path fill="#546E7A" d="M32 20H34V24H32z"/><path fill="#2196F3" d="M33,35H8c-1.104,0-2-0.896-2-2V8c0-1.104,0.896-2,2-2h14L33,35z"/><path fill="#3F51B5" d="M26 42L23 35 33 35z"/><path fill="#FFF" d="M19.172,24h-4.36l-1.008,3H11l4.764-13h2.444L23,27h-2.805L19.172,24z M15.444,22h3.101l-1.559-4.714L15.444,22z"/></svg>
+`
+const SETTING_DIV = `
 <div id="setting-div">
 	<div id="setting-hidden-div"></div>
 	<div id="setting-show-div">
-		<strong id="close-button" data-tips="Close">❌</strong>
-		<span>TMDB API Key&nbsp;&nbsp;🔑<input type="text" id="tmdb-api-key" placeholder="Please input TMDB API Key"></span>
-		<span>Language Code&nbsp;✨<input type="text" id="language-code" placeholder="Please input Language Code"></span>
-		<span><button type="button" id="save-button">Save</button></span>
-        <span style="margin-top: 10px"><a href="https://www.themoviedb.org/settings/api" target="_blank" style="text-decoration: none; color: rgba(0, 255, 0, 0.8);">🔑 Get TMDB API Key 🔑</a></span>
+        <strong id="close-button" data-tips="Close"></strong>
+        <table id="setting-table">
+            <tr>
+                <td>🔑 TMDB API Key</td>
+                <td><input type="text" id="tmdb-api-key" placeholder="Please input TMDB API Key"></td>
+            </tr>
+            <tr>
+                <td>✨ Language Code</td>
+                <td><input type="text" id="language-code" placeholder="Please input Language Code"></td>
+            </tr>
+            <tr>
+                <td>😰 Error Message</td>
+                <td><textarea type="text" id="error-message" readonly></textarea></td>
+            </tr>
+        </table>
+        <button type="button" id="save-button">Save</button>
+        <a href="https://www.themoviedb.org/settings/api" target="_blank" style="text-decoration: none; color: rgba(0, 255, 0, 0.8); margin-top: 10px">🔑 Get TMDB API Key 🔑<a>
         <strong id="clear-cache-button" data-tips="Clear Cache"></strong>
 	</div>
 </div>
 `
 
-window.onload = function () {
-    // 添加按钮和设置组件
-    let css = document.createElement("style");
+// 添加按钮和设置组件
+function addi18nButtonAndSettingDiv() {
+    // 添加 CSS
+    var css = document.createElement("style");
     css.innerHTML = CSS.trim();
     document.head.appendChild(css);
-    let div = document.createElement("div");
-    div.innerHTML = DIV.trim();
-    document.body.appendChild(div);
-    let i18nButton = document.createElement("button");
+
+    // 添加 i18n 按钮
+    var i18nButton = document.createElement("button");
     i18nButton.id = i18n_BUTTON_ID;
-    i18nButton.innerHTML = '<svg class="i18n-svg" xmlns="http://www.w3.org/2000/svg"  viewBox="0 0 48 48" width="48px" height="48px"><path fill="#CFD8DC" d="M15,13h25c1.104,0,2,0.896,2,2v25c0,1.104-0.896,2-2,2H26L15,13z"/><path fill="#546E7A" d="M26.832,34.854l-0.916-1.776l0.889-0.459c0.061-0.031,6.101-3.208,9.043-9.104l0.446-0.895l1.79,0.893l-0.447,0.895c-3.241,6.496-9.645,9.85-9.916,9.989L26.832,34.854z"/><path fill="#546E7A" d="M38.019 34l-.87-.49c-.207-.116-5.092-2.901-8.496-7.667l1.627-1.162c3.139 4.394 7.805 7.061 7.851 7.087L39 32.26 38.019 34zM26 22H40V24H26z"/><path fill="#546E7A" d="M32 20H34V24H32z"/><path fill="#2196F3" d="M33,35H8c-1.104,0-2-0.896-2-2V8c0-1.104,0.896-2,2-2h14L33,35z"/><path fill="#3F51B5" d="M26 42L23 35 33 35z"/><path fill="#FFF" d="M19.172,24h-4.36l-1.008,3H11l4.764-13h2.444L23,27h-2.805L19.172,24z M15.444,22h3.101l-1.559-4.714L15.444,22z"/></svg>';
+    i18nButton.innerHTML = i18n_BUTTON.trim();
+    // 延时等待右导航栏加载
     setTimeout(function () {
         let rightHeader = document.getElementsByClassName(RIGHT_HEADERF_CLASS_NAME)[0];
         if (rightHeader) {
@@ -212,12 +253,18 @@ window.onload = function () {
         }
     }, 1000);
 
+    // 添加设置组件
+    var div = document.createElement("div");
+    div.innerHTML = SETTING_DIV.trim();
+    document.body.appendChild(div);
+
     // 添加事件
-    let closeButton = document.getElementById(CLOSE_BUTTON_ID);
-    let saveButton = document.getElementById(SAVE_BUTTON_ID);
-    let clearCacheButton = document.getElementById(CLEAR_CACHE_BUTTON_ID);
-    let tmdbApiKeyInput = document.getElementById(TMDB_API_KEY_INPUT_ID);
-    let languageCodeInput = document.getElementById(LANGUAGE_CODE_INPUT_ID);
+    var closeButton = document.getElementById(CLOSE_BUTTON_ID);
+    var saveButton = document.getElementById(SAVE_BUTTON_ID);
+    var clearCacheButton = document.getElementById(CLEAR_CACHE_BUTTON_ID);
+    var tmdbApiKeyInput = document.getElementById(TMDB_API_KEY_INPUT_ID);
+    var languageCodeInput = document.getElementById(LANGUAGE_CODE_INPUT_ID);
+    var errorMessageTextarea = document.getElementById(ERROR_MESSAGE_TEXTAREA_ID);
     // 打开设置界面
     i18nButton.onclick = function () {
         let tmdbApiKey = GM_getValue(KEY_TMDB_API_KEY);
@@ -246,19 +293,86 @@ window.onload = function () {
     saveButton.onclick = function () {
         GM_setValue(KEY_TMDB_API_KEY, tmdbApiKeyInput.value);
         GM_setValue(KEY_LANGUAGE_CODE, languageCodeInput.value);
+        clearCache();
+        initSeriesData();
         closeButton.click();
     }
     // 清除缓存
     clearCacheButton.onclick = function () {
-        let keys = GM_listValues();
-        for (let key of keys) {
-            if (key.indexOf(KEY_TITLE_PREFIX) != -1) {
-                GM_deleteValue(key);
-            }
-        }
+        clearCache();
         Toast("Clear Cache Success", 2500);
     }
 }
+// 清除缓存
+function clearCache() {
+    let keys = GM_listValues();
+    for (let key of keys) {
+        if (key.indexOf(KEY_TITLE_PREFIX) != -1 || key.indexOf(KEY_OVERVIEW_PREFIX) != -1 || key == KEY_ERROR_MESSAGE) {
+            GM_deleteValue(key);
+        }
+    }
+    document.getElementById(ERROR_MESSAGE_TEXTAREA_ID).value = "";
+}
+// 保存错误信息
+function saveErrorMessage(errorMessage) {
+    var errorMessageTextarea = document.getElementById(ERROR_MESSAGE_TEXTAREA_ID);
+    errorMessageTextarea.value = errorMessage;
+    GM_setValue(KEY_ERROR_MESSAGE, errorMessage);
+}
+// 初始化数据
+function initSeriesData() {
+    var tmdbApiKey = GM_getValue(KEY_TMDB_API_KEY);
+    var languageCode = GM_getValue(KEY_LANGUAGE_CODE);
+    if (!tmdbApiKey || !languageCode) {
+        return;
+    }
+    // 获取 Sonarr apiKey
+    $.ajax({
+        type: "GET",
+        url: "/initialize.js",
+        xhrFields: {
+            withCredentials: true
+        },
+        success: function (res) {
+            let apiKey = res.substring(res.indexOf("apiKey: '") + 9);
+            apiKey = apiKey.substring(0, apiKey.indexOf("'"));
+            // 获取所有剧集的标题和 tvdbId
+            $.ajax({
+                type: "GET",
+                url: "/api/v3/series",
+                xhrFields: {
+                    withCredentials: true
+                },
+                headers: {
+                    "X-Api-Key": apiKey
+                },
+                success: function (res) {
+                    for (let tv of res) {
+                        // 没有数据则请求 TMDB 接口
+                        if (!GM_getValue(KEY_TITLE_PREFIX + tv.title)) {
+                            GM_setValue(KEY_TVDBID_PREFIX + tv.title, tv.tvdbId);
+                            translate(tv.title, false);
+                        }
+                        if (GM_getValue(KEY_ERROR_MESSAGE)) {
+                            break;
+                        }
+                    }
+                },
+                error: function (err) {
+                    let errorMessage = "获取 Sonarr 剧集列表出错: " + JSON.stringify(err);
+                    saveErrorMessage(errorMessage)
+                    console.log(errorMessage);
+                }
+            });
+        },
+        error: function (err) {
+            let errorMessage = "获取 Sonarr apiKey 出错: " + JSON.stringify(err);
+            saveErrorMessage(errorMessage)
+            console.log(errorMessage);
+        }
+    });
+}
+
 // 显示消息
 function Toast(msg, duration) {
     duration = isNaN(duration) ? 3000 : duration;
@@ -272,17 +386,54 @@ function Toast(msg, duration) {
         setTimeout(function () { document.body.removeChild(m) }, d * 1000);
     }, duration);
 }
-// 通过 TMDB 接口获取对应语言标题，并存到本地
-function translateTitle() {
-    let tmdbApiKey = GM_getValue(KEY_TMDB_API_KEY);
-    let languageCode = GM_getValue(KEY_LANGUAGE_CODE);
-    if (!tmdbApiKey || !languageCode || tmdbApiKey.indexOf("Error") != -1) {
+
+// 通过 TMDB 接口获取对应语言的标题和简介
+function translate(title, saveOverview) {
+    var tmdbApiKey = GM_getValue(KEY_TMDB_API_KEY);
+    var languageCode = GM_getValue(KEY_LANGUAGE_CODE);
+    if (!tmdbApiKey || !languageCode || GM_getValue(KEY_ERROR_MESSAGE)) {
+        return;
+    }
+    GM_setValue(KEY_TITLE_PREFIX + title, title);
+    let tvdbId = GM_getValue(KEY_TVDBID_PREFIX + title);
+    $.ajax({
+        type: "GET",
+        url: "https://api.themoviedb.org/3/find/" + tvdbId + "?api_key=" + tmdbApiKey + "&language=" + languageCode + "&external_source=tvdb_id",
+        success: function (res) {
+            if (res && res.tv_results && res.tv_results.length > 0) {
+                GM_setValue(KEY_TITLE_PREFIX + title, res.tv_results[0].name);
+                if (saveOverview) {
+                    let overview = res.tv_results[0].overview;
+                    if(overview) {
+                        GM_setValue(KEY_OVERVIEW_PREFIX + title, overview);
+                        let overviewDiv = document.getElementsByClassName(DETAILS_OVERVIEW_CLASS_NAME)[0];
+                        if (overviewDiv) {
+                            overviewDiv.innerHTML = '<div style="overflow: hidden;"><span>' + overview + '</span></div>';
+                        }
+                    }
+                }
+            }
+        },
+        error: function (err) {
+            let errorMessage = "请求 TMDB 接口出错: " + JSON.stringify(err);
+            saveErrorMessage(errorMessage)
+            console.log(errorMessage);
+        }
+    });
+}
+
+// 替换网页中的标题
+function replaceTitle() {
+    var tmdbApiKey = GM_getValue(KEY_TMDB_API_KEY);
+    var languageCode = GM_getValue(KEY_LANGUAGE_CODE);
+    if (!tmdbApiKey || !languageCode) {
         return;
     }
 
     var url = window.location.href;
     var className = POSTER_TITLE_CLASS_NAME;
     var endPath = url.substring(url.lastIndexOf("/"));
+    var saveOverview = false;
     if (endPath != "/") {
         if (CALENDAR_TITLE_PATH.indexOf(endPath) != -1) {
             className = CALENDAR_TITLE_CLASS_NAME;
@@ -290,9 +441,11 @@ function translateTitle() {
             className = SERIES_TITLE_CLASS_NAME;
         } else if (url.indexOf(DETAILS_TITLE_PATH) != -1) {
             className = DETAILS_TITLE_CLASS_NAME;
+            saveOverview = true;
         }
     }
     var titleDivs = document.getElementsByClassName(className);
+    var errorMessageTextarea = document.getElementById(ERROR_MESSAGE_TEXTAREA_ID);
     if (className == POSTER_TITLE_CLASS_NAME && (!titleDivs || titleDivs.length == 0)) {
         titleDivs = document.getElementsByClassName(SERIES_TITLE_CLASS_NAME);
         if (!titleDivs || titleDivs.length == 0) {
@@ -303,40 +456,21 @@ function translateTitle() {
         titleDivs = document.getElementsByClassName(CALENDAR_TITLE_AGENDA_CLASS_NAME);
     }
     for (let titleDiv of titleDivs) {
-        tmdbApiKey = GM_getValue(KEY_TMDB_API_KEY);
-        if (tmdbApiKey.indexOf("Error") != -1) {
-            return;
-        }
         let title = titleDiv.innerHTML;
-        if (!title) {
-            return;
-        }
-        if (!/[a-zA-Z].*/.test(title) || title.indexOf("<") != -1) {
+        if (!title || title.indexOf("<") != -1) {
             continue;
         }
-        var chineseTitle = GM_getValue(KEY_TITLE_PREFIX + title);
-        if (chineseTitle) {
-            titleDiv.innerHTML = chineseTitle;
-        } else {
-            $.ajax({
-                type: "GET",
-                url: API_URL + "?api_key=" + tmdbApiKey + "&language=" + languageCode + "&page=1&include_adult=true&query=" + encodeURIComponent(title),
-                success: function (res) {
-                    if (res && res.results && res.results.length > 0) {
-                        chineseTitle = res.results[0].name;
-                        GM_setValue(KEY_TITLE_PREFIX + title, chineseTitle);
-                        titleDiv.innerHTML = chineseTitle;
-                    } else {
-                        GM_setValue(KEY_TITLE_PREFIX + title, title);
-                    }
-                },
-                error: function (err) {
-                    GM_setValue(KEY_TMDB_API_KEY, "Error【" + err.responseJSON.status_message + "】");
-                    return;
-                }
-            });
+        var translatedTitle = GM_getValue(KEY_TITLE_PREFIX + title);
+        if (translatedTitle && title != translatedTitle) {
+            titleDiv.innerHTML = translatedTitle;
+            if (saveOverview) {
+                // 详情页重新加载最新数据
+                translate(title, saveOverview);
+            }
         }
     };
 }
 
-setInterval(translateTitle, 600);
+initSeriesData();
+addi18nButtonAndSettingDiv();
+setInterval(replaceTitle, 500);

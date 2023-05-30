@@ -23,7 +23,8 @@
    [其他 Chromium 内核浏览器](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo)  
   
 2. 安装 Sonarr-Title-i18n 油猴脚本  
-  [Sonarr-Title-i18n](https://greasyfork.org/zh-CN/scripts/450716-sonarr-title-i18n)  
+  [Sonarr-v4](https://greasyfork.org/zh-CN/scripts/450716-sonarr-title-i18n)  
+  [Sonarr-v3](https://greasyfork.org/zh-CN/scripts/450716-sonarr-title-i18n?version=1089938)  
 
 ## ✨ 使用
 

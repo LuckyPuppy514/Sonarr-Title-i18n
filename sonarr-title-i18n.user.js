@@ -3,17 +3,14 @@
 // @name:zh                 Sonarr 标题国际化
 // @description             利用 TMDB 接口把 Sonarr 中的标题替换成其他语言标题
 // @namespace               https://github.com/LuckyPuppy514
-// @version                 1.0.2
-// @commit                  v1.0.0 创建项目
-// @commit                  v1.0.1 修复接口报错时，无法看到报错信息的BUG
-// @commit                  v1.0.2 改用 tvdbId 查询，提高准确率；新增简介国际化；代码优化
+// @version                 1.0.3
 // @homepage                https://github.com/LuckyPuppy514/Sonarr-Title-i18n
 // @updateURL               https://greasyfork.org/zh-CN/scripts/450716-sonarr-title-i18n
 // @downloadURL             https://greasyfork.org/zh-CN/scripts/450716-sonarr-title-i18n
 // @author                  LuckyPuppy514
 // @copyright               2022, Grant LuckyPuppy514 (https://github.com/LuckyPuppy514)
 // @license                 MIT
-// @icon                    https://cdn.jsdelivr.net/gh/LuckyPuppy514/dashboard-icons/png/sonarr.png
+// @icon                    https://github.rn.lckp.top/LuckyPuppy514/dashboard-icons/master/png/sonarr.png
 // @include                 *://*sonarr*
 // @include                 *://*:8989/*
 // @run-at                  document-end
@@ -36,17 +33,17 @@ const KEY_TITLE_PREFIX = "TITLE_";
 const KEY_TVDBID_PREFIX = "TVDBID_";
 const KEY_OVERVIEW_PREFIX = "OVERVIEW_";
 // className
-const RIGHT_HEADERF_CLASS_NAME = "PageHeader-right-20I5D";
-const POSTER_TITLE_CLASS_NAME = "SeriesIndexPoster-title-1h3SR";
-const OVERVIEW_TITLE_CLASS_NAME = "SeriesIndexOverview-title-39hvt SeriesIndexOverview-link-3BWTB Link-link-1HpiV Link-link-1HpiV Link-to-1Sec5";
-const DETAILS_TITLE_CLASS_NAME = "SeriesDetails-title-39xGO";
-const CALENDAR_TITLE_CLASS_NAME = "CalendarEvent-seriesTitle-3nGRY";
-const CALENDAR_TITLE_AGENDA_CLASS_NAME = "AgendaEvent-seriesTitle-20sIO";
-const DETAILS_OVERVIEW_CLASS_NAME = "SeriesDetails-overview-bPPhg";
+const RIGHT_HEADERF_CLASS_NAME = "PageHeader-right-e8LU4";
+const POSTER_TITLE_CLASS_NAME = "SeriesIndexPoster-title-rhAQh";
+const OVERVIEW_TITLE_CLASS_NAME = "SeriesIndexOverview-title-LQthD SeriesIndexOverview-link-ltHLM Link-link-RInnp Link-link-RInnp Link-to-kylTi";
+const DETAILS_TITLE_CLASS_NAME = "SeriesDetails-title-pJv1g";
+const CALENDAR_TITLE_CLASS_NAME = "CalendarEvent-seriesTitle-QSWzp";
+const CALENDAR_TITLE_AGENDA_CLASS_NAME = "AgendaEvent-seriesTitle-uBPt0";
+const DETAILS_OVERVIEW_CLASS_NAME = "SeriesDetails-overview-cQJdA";
+const SERIES_TITLE_CLASS_NAME = "Link-link-RInnp Link-to-kylTi";
 // url path
 const DETAILS_TITLE_PATH = "/series/";
 const CALENDAR_TITLE_PATH = "/calendar";
-const SERIES_TITLE_CLASS_NAME = "Link-link-1HpiV Link-to-1Sec5";
 const SERIES_TITLE_PATH = "/serieseditor, /seasonpass, /queue, /history, /blocklist, /missing, /cutoffunmet";
 // element id
 const i18n_BUTTON_ID = "i18n-button";

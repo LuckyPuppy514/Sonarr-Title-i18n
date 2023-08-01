@@ -3,7 +3,7 @@
 // @name:zh                 Sonarr 标题国际化
 // @description             利用 TMDB 接口把 Sonarr 中的标题替换成其他语言标题
 // @namespace               https://github.com/LuckyPuppy514
-// @version                 1.0.3
+// @version                 1.0.4
 // @homepage                https://github.com/LuckyPuppy514/Sonarr-Title-i18n
 // @updateURL               https://greasyfork.org/zh-CN/scripts/450716-sonarr-title-i18n
 // @downloadURL             https://greasyfork.org/zh-CN/scripts/450716-sonarr-title-i18n
@@ -326,13 +326,12 @@ function initSeriesData() {
     // 获取 Sonarr apiKey
     $.ajax({
         type: "GET",
-        url: "/initialize.js",
+        url: "/initialize.json",
         xhrFields: {
             withCredentials: true
         },
         success: function (res) {
-            let apiKey = res.substring(res.indexOf("apiKey: '") + 9);
-            apiKey = apiKey.substring(0, apiKey.indexOf("'"));
+            let apiKey = res.apiKey;
             // 获取所有剧集的标题和 tvdbId
             $.ajax({
                 type: "GET",
@@ -401,7 +400,7 @@ function translate(title, saveOverview) {
                 GM_setValue(KEY_TITLE_PREFIX + title, res.tv_results[0].name);
                 if (saveOverview) {
                     let overview = res.tv_results[0].overview;
-                    if(overview) {
+                    if (overview) {
                         GM_setValue(KEY_OVERVIEW_PREFIX + title, overview);
                         let overviewDiv = document.getElementsByClassName(DETAILS_OVERVIEW_CLASS_NAME)[0];
                         if (overviewDiv) {
